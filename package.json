@@ -1,0 +1,11 @@
+{
+  "name": "clean-things",
+  "version": "1.0.0",
+  "description": "A todo list to get things done",
+  "author": "Joan Rieu <joan@joanrieu.com>",
+  "license": "UNLICENSED",
+  "private": true,
+  "devDependencies": {
+    "typescript": "^3.0.1"
+  }
+}
