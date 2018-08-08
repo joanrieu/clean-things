@@ -8,11 +8,7 @@ type TodoEvent =
   | { type: "task_deleted", id: ID }
 
 class TodoApp {
-  events: TodoEvent[] = []
-
-  emit(event: TodoEvent) {
-    this.events.push(event)
-  }
+  constructor(readonly emit: (event: TodoEvent) => void) { }
 
   createTask(id: ID) {
     this.emit({ type: "task_created", id })
@@ -34,10 +30,21 @@ class TodoApp {
 import { h, render, Component } from "preact"
 
 class TodoView extends Component {
+  app = window.app = new TodoApp(this.emit.bind(this))
+
+  state = { events: [] }
+
+  emit(event: TodoEvent) {
+    this.setState({
+      events: [...this.state.events, event]
+    })
+  }
+
   render() {
+    const { events } = this.state
     return (
       <div>
-        Hello world
+        {JSON.stringify(events)}
       </div>
     )
   }
