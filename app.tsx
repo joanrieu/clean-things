@@ -30,3 +30,17 @@ class TodoApp {
     this.emit({ type: "task_deleted", id })
   }
 }
+
+import { h, render, Component } from "preact"
+
+class TodoView extends Component {
+  render() {
+    return (
+      <div>
+        Hello world
+      </div>
+    )
+  }
+}
+
+render(<TodoView />, document.body)
