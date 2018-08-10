@@ -7,47 +7,42 @@ type TodoEvent =
   | { type: "task_checked", id: ID }
   | { type: "task_deleted", id: ID }
 
+import { observable } from "mobx"
+
 class TodoApp {
-  constructor(readonly emit: (event: TodoEvent) => void) { }
+  @observable events: TodoEvent[] = []
 
   createTask(id: ID) {
-    this.emit({ type: "task_created", id })
+    this.events.push({ type: "task_created", id })
   }
 
   renameTask(id: ID, name: TaskName) {
-    this.emit({ type: "task_renamed", id, name })
+    this.events.push({ type: "task_renamed", id, name })
   }
 
   checkTask(id: ID) {
-    this.emit({ type: "task_checked", id })
+    this.events.push({ type: "task_checked", id })
   }
 
   deleteTask(id: ID) {
-    this.emit({ type: "task_deleted", id })
+    this.events.push({ type: "task_deleted", id })
   }
 }
 
 import { h, render, Component } from "preact"
+import { observer } from "mobx-preact"
 
-class TodoView extends Component {
-  app = window.app = new TodoApp(this.emit.bind(this))
+const app = window.app = new TodoApp()
 
-  state = { events: [] }
-
-  emit(event: TodoEvent) {
-    this.setState({
-      events: [...this.state.events, event]
-    })
-  }
-
+@observer
+class TodoView extends Component<{ app: TodoApp }> {
   render() {
-    const { events } = this.state
     return (
       <div>
-        {JSON.stringify(events)}
+        {JSON.stringify(this.props.app.events)}
       </div>
     )
   }
 }
 
-render(<TodoView />, document.body)
+render(<TodoView app={app} />, document.body)
