@@ -23,25 +23,30 @@ class TodoApp {
   @observable events: TodoEvent[] = []
 
   createTask(id: ID) {
-    this.events.push({ type: "task_created", id })
+    if (!this.state.tasks.has(id))
+      this.events.push({ type: "task_created", id })
   }
 
   renameTask(id: ID, name: TaskName) {
-    this.events.push({ type: "task_renamed", id, name })
+    if (this.state.tasks.has(id))
+      this.events.push({ type: "task_renamed", id, name })
   }
 
   checkTask(id: ID) {
-    this.events.push({ type: "task_checked", id })
+    if (this.state.tasks.has(id))
+      this.events.push({ type: "task_checked", id })
   }
 
   deleteTask(id: ID) {
-    this.events.push({ type: "task_deleted", id })
+    if (this.state.tasks.has(id))
+      this.events.push({ type: "task_deleted", id })
   }
 
   @computed get state() {
     const state: TodoState = {
       tasks: new Map()
     }
+
     for (const event of this.events) {
       switch (event.type) {
         case "task_created":
@@ -62,6 +67,7 @@ class TodoApp {
           break
       }
     }
+
     return state
   }
 }
