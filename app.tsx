@@ -19,29 +19,34 @@ interface Task {
 
 import { action, observable } from "mobx"
 
+function assert(predicate: () => any) {
+  if (!predicate())
+    throw new Error("assertion failed: " + predicate)
+}
+
 class TodoApp {
   @action
   createTask(id: ID) {
-    if (!this.state.tasks.has(id))
-      this.apply({ type: "task_created", id })
+    assert(() => !this.state.tasks.has(id))
+    this.apply({ type: "task_created", id })
   }
 
   @action
   renameTask(id: ID, name: TaskName) {
-    if (this.state.tasks.has(id))
-      this.apply({ type: "task_renamed", id, name })
+    assert(() => this.state.tasks.has(id))
+    this.apply({ type: "task_renamed", id, name })
   }
 
   @action
   checkTask(id: ID) {
-    if (this.state.tasks.has(id))
-      this.apply({ type: "task_checked", id })
+    assert(() => this.state.tasks.has(id))
+    this.apply({ type: "task_checked", id })
   }
 
   @action
   deleteTask(id: ID) {
-    if (this.state.tasks.has(id))
-      this.apply({ type: "task_deleted", id })
+    assert(() => this.state.tasks.has(id))
+    this.apply({ type: "task_deleted", id })
   }
 
   @observable
