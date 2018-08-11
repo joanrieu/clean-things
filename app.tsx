@@ -17,58 +17,53 @@ interface Task {
   checked: boolean
 }
 
-import { observable, computed } from "mobx"
+import { observable } from "mobx"
 
 class TodoApp {
-  @observable events: TodoEvent[] = []
-
   createTask(id: ID) {
     if (!this.state.tasks.has(id))
-      this.events.push({ type: "task_created", id })
+      this.apply({ type: "task_created", id })
   }
 
   renameTask(id: ID, name: TaskName) {
     if (this.state.tasks.has(id))
-      this.events.push({ type: "task_renamed", id, name })
+      this.apply({ type: "task_renamed", id, name })
   }
 
   checkTask(id: ID) {
     if (this.state.tasks.has(id))
-      this.events.push({ type: "task_checked", id })
+      this.apply({ type: "task_checked", id })
   }
 
   deleteTask(id: ID) {
     if (this.state.tasks.has(id))
-      this.events.push({ type: "task_deleted", id })
+      this.apply({ type: "task_deleted", id })
   }
 
-  @computed get state() {
-    const state: TodoState = {
-      tasks: new Map()
-    }
+  @observable
+  state: TodoState = {
+    tasks: new Map()
+  }
 
-    for (const event of this.events) {
-      switch (event.type) {
-        case "task_created":
-          state.tasks.set(event.id, {
-            id: event.id,
-            name: "",
-            checked: false
-          })
-          break
-        case "task_renamed":
-          state.tasks.get(event.id)!.name = event.name
-          break
-        case "task_checked":
-          state.tasks.get(event.id)!.checked = true
-          break
-        case "task_deleted":
-          state.tasks.delete(event.id)
-          break
-      }
+  private apply(event: TodoEvent) {
+    switch (event.type) {
+      case "task_created":
+        this.state.tasks.set(event.id, {
+          id: event.id,
+          name: "",
+          checked: false
+        })
+        break
+      case "task_renamed":
+        this.state.tasks.get(event.id)!.name = event.name
+        break
+      case "task_checked":
+        this.state.tasks.get(event.id)!.checked = true
+        break
+      case "task_deleted":
+        this.state.tasks.delete(event.id)
+        break
     }
-
-    return state
   }
 }
 
