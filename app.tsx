@@ -79,28 +79,25 @@ class TodoApp {
 import { h, render, Component } from "preact"
 import { observer } from "mobx-preact"
 
-const app = window.app = new TodoApp()
+const app = (window as any).app = new TodoApp()
 
 @observer
 class TodoAppView extends Component<{ app: TodoApp }> {
   render() {
     const { app } = this.props
     return (
-      <div style={{
-        "display": "flex",
-        "flex-direction": "column",
-        "justify-content": "center",
-        "place-items": "center",
-        "min-height": "100vh",
-        "font-size": "2em",
-        "color": "#666",
-        "background-color": "#eee"
-      }}>
-      {
-        [...app.state.tasks.values()].map(task =>
-          <TaskView app={app} task={task} />
-        )
-      }
+      <div className="uk-height-viewport uk-grid-collapse"
+        uk-grid>
+        <div className="uk-width-medium uk-background-muted uk-padding">
+          <div className="uk-logo">
+            Clean Things
+          </div>
+        </div>
+        <div className="uk-width-expand uk-padding">{
+          [...app.state.tasks.values()].map(task =>
+            <TaskView app={app} task={task} />
+          )
+        }</div>
       </div>
     )
   }
@@ -111,15 +108,19 @@ class TaskView extends Component<{ app: TodoApp, task: Task }> {
   render() {
     const { app, task } = this.props
     return (
-      <div style={{ "padding": ".2em .5em" }}>
-        <span>
-          {task.checked ? "☒" : "☐"}
-        </span>
-        {" "}
-        <span>
-          {task.name}
-        </span>
-      </div>
+      <form className="uk-form-large uk-grid-collapse"
+        onSubmit={event => event.preventDefault()}
+        uk-grid>
+        <div className="uk-width-auto uk-margin-right">
+          <input className="uk-checkbox"
+            type="checkbox"
+            checked={task.checked} />
+        </div>
+        <div className="uk-width-expand">
+          <input className="uk-input uk-form-blank"
+            value={task.name} />
+        </div>
+      </form>
     )
   }
 }
