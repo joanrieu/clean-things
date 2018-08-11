@@ -18,7 +18,7 @@ interface Task {
   checked: boolean
 }
 
-import { action, observable } from "mobx"
+import { action, autorun, observable } from "mobx"
 
 function assert(predicate: () => any) {
   if (!predicate())
@@ -58,7 +58,11 @@ class TodoApp {
     tasks: new Map()
   }
 
-  private apply(event: TodoEvent) {
+  @observable
+  readonly events: TodoEvent[] = []
+
+  apply(event: TodoEvent) {
+    this.events.push(event)
     switch (event.type) {
       case "task_created":
         this.state.tasks.set(event.id, {
@@ -85,8 +89,6 @@ class TodoApp {
 
 import { h, render, Component } from "preact"
 import { observer } from "mobx-preact"
-
-const app = (window as any).app = new TodoApp()
 
 @observer
 class TodoAppView extends Component<{ app: TodoApp }> {
@@ -178,4 +180,19 @@ class NewTaskView extends Component<{ app: TodoApp }> {
   }
 }
 
+const app = (window as any).app = new TodoApp()
 render(<TodoAppView app={app} />, document.body)
+restoreEvents()
+autorun(backupEvents)
+
+function backupEvents() {
+  const events = JSON.stringify(app.events)
+  localStorage.setItem("events", events)
+}
+
+function restoreEvents() {
+  const events = localStorage.getItem("events")
+  if (events)
+    for (const event of JSON.parse(events))
+      app.apply(event)
+}
