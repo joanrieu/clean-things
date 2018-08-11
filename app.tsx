@@ -17,24 +17,28 @@ interface Task {
   checked: boolean
 }
 
-import { observable } from "mobx"
+import { action, observable } from "mobx"
 
 class TodoApp {
+  @action
   createTask(id: ID) {
     if (!this.state.tasks.has(id))
       this.apply({ type: "task_created", id })
   }
 
+  @action
   renameTask(id: ID, name: TaskName) {
     if (this.state.tasks.has(id))
       this.apply({ type: "task_renamed", id, name })
   }
 
+  @action
   checkTask(id: ID) {
     if (this.state.tasks.has(id))
       this.apply({ type: "task_checked", id })
   }
 
+  @action
   deleteTask(id: ID) {
     if (this.state.tasks.has(id))
       this.apply({ type: "task_deleted", id })
