@@ -95,17 +95,18 @@ class TodoAppView extends Component<{ app: TodoApp }> {
   render() {
     const { app } = this.props
     return (
-      <div className="uk-height-viewport uk-grid-collapse"
-        uk-grid>
+      <div className="uk-height-viewport uk-flex">
         <div className="uk-width-medium uk-background-muted uk-padding">
           <div className="uk-logo">
             Clean Things
           </div>
         </div>
-        <div className="uk-width-expand uk-padding">
-          {[...app.state.tasks.values()].map(task =>
-            <TaskView app={app} task={task} key={task.id} />
-          )}
+        <div className="uk-width-expand uk-flex uk-flex-column">
+          <div className="uk-flex-1 uk-height-small uk-overflow-auto">
+            {[...app.state.tasks.values()].map(task =>
+              <TaskView app={app} task={task} key={task.id} />
+            )}
+          </div>
           <NewTaskView app={app} />
         </div>
       </div>
@@ -118,7 +119,7 @@ class TaskView extends Component<{ app: TodoApp, task: Task }> {
   render() {
     const { app, task } = this.props
     return (
-      <form className="uk-form-large uk-grid-collapse"
+      <form className="uk-form-large uk-margin-left uk-margin-right uk-grid-collapse"
         onSubmit={event => event.preventDefault()}
         uk-grid>
         <div className="uk-width-auto uk-margin-right">
@@ -163,7 +164,7 @@ class NewTaskView extends Component<{ app: TodoApp }> {
 
   render() {
     return (
-      <form className="uk-margin-top uk-grid-collapse"
+      <form className="uk-padding-small uk-grid-collapse"
         onSubmit={event => event.preventDefault()}
         uk-grid>
         <div className="uk-inline uk-width-expand">
