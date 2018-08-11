@@ -133,6 +133,11 @@ class TaskView extends Component<{ app: TodoApp, task: Task }> {
             onKeyPress={(event: any) => event.keyCode === 13 && event.target.blur()}
             value={task.name} />
         </div>
+        <div className="uk-width-auto">
+          <button className="uk-icon-link"
+            uk-icon="trash"
+            onClick={event => (app.deleteTask(task.id), event.preventDefault())} />
+        </div>
       </form>
     )
   }
