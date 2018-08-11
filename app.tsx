@@ -100,11 +100,12 @@ class TodoAppView extends Component<{ app: TodoApp }> {
             Clean Things
           </div>
         </div>
-        <div className="uk-width-expand uk-padding">{
-          [...app.state.tasks.values()].map(task =>
-            <TaskView app={app} task={task} />
-          )
-        }</div>
+        <div className="uk-width-expand uk-padding">
+          {[...app.state.tasks.values()].map(task =>
+            <TaskView app={app} task={task} key={task.id} />
+          )}
+          <NewTaskView app={app} />
+        </div>
       </div>
     )
   }
@@ -131,6 +132,41 @@ class TaskView extends Component<{ app: TodoApp, task: Task }> {
             onBlur={(event: any) => app.renameTask(task.id, event.target.value)}
             onKeyPress={(event: any) => event.keyCode === 13 && event.target.blur()}
             value={task.name} />
+        </div>
+      </form>
+    )
+  }
+}
+
+@observer
+class NewTaskView extends Component<{ app: TodoApp }> {
+  @observable
+  name = ""
+
+  @action.bound
+  onKeyPress(event: any) {
+    this.name = event.target.value as string
+    if (event.keyCode === 13 && this.name) {
+      const { app } = this.props
+      const id = "task:" + Math.random().toString(16).slice(2)
+      app.createTask(id)
+      app.renameTask(id, this.name)
+      this.name = ""
+    }
+  }
+
+  render() {
+    return (
+      <form className="uk-margin-top uk-grid-collapse"
+        onSubmit={event => event.preventDefault()}
+        uk-grid>
+        <div className="uk-inline uk-width-expand">
+          <span className="uk-form-icon"
+            uk-icon="plus" />
+          <input className="uk-input"
+            onKeyPress={this.onKeyPress}
+            placeholder="New task"
+            value={this.name} />
         </div>
       </form>
     )
