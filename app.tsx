@@ -2,7 +2,7 @@ type ID = string
 type TaskName = string
 
 type TodoEvent =
-  | { type: "task_created", id: ID }
+  | { type: "task_created", id: ID, name: TaskName }
   | { type: "task_renamed", id: ID, name: TaskName }
   | { type: "task_checked", id: ID }
   | { type: "task_unchecked", id: ID }
@@ -27,9 +27,9 @@ function assert(predicate: () => any) {
 
 class TodoApp {
   @action
-  createTask(id: ID) {
+  createTask(id: ID, name: string) {
     assert(() => !this.state.tasks.has(id))
-    this.apply({ type: "task_created", id })
+    this.apply({ type: "task_created", id, name })
   }
 
   @action
@@ -67,7 +67,7 @@ class TodoApp {
       case "task_created":
         this.state.tasks.set(event.id, {
           id: event.id,
-          name: "",
+          name: event.name,
           checked: false
         })
         break
@@ -156,8 +156,7 @@ class NewTaskView extends Component<{ app: TodoApp }> {
     if (event.keyCode === 13 && this.name) {
       const { app } = this.props
       const id = "task:" + Math.random().toString(16).slice(2)
-      app.createTask(id)
-      app.renameTask(id, this.name)
+      app.createTask(id, this.name)
       this.name = ""
     }
   }
