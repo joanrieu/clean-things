@@ -5,6 +5,7 @@ type TodoEvent =
   | { type: "task_created", id: ID }
   | { type: "task_renamed", id: ID, name: TaskName }
   | { type: "task_checked", id: ID }
+  | { type: "task_unchecked", id: ID }
   | { type: "task_deleted", id: ID }
 
 interface TodoState {
@@ -38,9 +39,12 @@ class TodoApp {
   }
 
   @action
-  checkTask(id: ID) {
+  checkTask(id: ID, check = true) {
     assert(() => this.state.tasks.has(id))
-    this.apply({ type: "task_checked", id })
+    this.apply({
+      type: check ? "task_checked" : "task_unchecked",
+      id
+    } as TodoEvent)
   }
 
   @action
@@ -68,6 +72,9 @@ class TodoApp {
         break
       case "task_checked":
         this.state.tasks.get(event.id)!.checked = true
+        break
+      case "task_unchecked":
+        this.state.tasks.get(event.id)!.checked = false
         break
       case "task_deleted":
         this.state.tasks.delete(event.id)
@@ -114,10 +121,15 @@ class TaskView extends Component<{ app: TodoApp, task: Task }> {
         <div className="uk-width-auto uk-margin-right">
           <input className="uk-checkbox"
             type="checkbox"
-            checked={task.checked} />
+            checked={task.checked}
+            onChange={(event: any) =>
+              app.checkTask(task.id, event.target.checked)} />
         </div>
         <div className="uk-width-expand">
-          <input className="uk-input uk-form-blank"
+          <input className={"uk-input uk-form-blank"}
+            style={task.checked && { opacity: 0.5, textDecoration: "line-through" }}
+            onBlur={(event: any) => app.renameTask(task.id, event.target.value)}
+            onKeyPress={(event: any) => event.keyCode === 13 && event.target.blur()}
             value={task.name} />
         </div>
       </form>
