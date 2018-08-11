@@ -76,7 +76,16 @@ class TodoAppView extends Component<{ app: TodoApp }> {
   render() {
     const { app } = this.props
     return (
-      <div>
+      <div style={{
+        "display": "flex",
+        "flex-direction": "column",
+        "justify-content": "center",
+        "place-items": "center",
+        "min-height": "100vh",
+        "font-size": "2em",
+        "color": "#666",
+        "background-color": "#eee"
+      }}>
       {
         [...app.state.tasks.values()].map(task =>
           <TaskView app={app} task={task} />
@@ -92,9 +101,14 @@ class TaskView extends Component<{ app: TodoApp, task: Task }> {
   render() {
     const { app, task } = this.props
     return (
-      <div>
-        {task.checked ? "☑ " : "☐ "}
-        {task.name}
+      <div style={{ "padding": ".2em .5em" }}>
+        <span>
+          {task.checked ? "☒" : "☐"}
+        </span>
+        {" "}
+        <span>
+          {task.name}
+        </span>
       </div>
     )
   }
