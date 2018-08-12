@@ -147,9 +147,10 @@ class TaskView extends Component<{ app: TodoApp, task: Task }> {
               value={task.name} />
           </div>
           <div className="uk-width-auto">
-            <button className="uk-icon-link"
+            <a className="uk-icon-link"
+              href="#"
               uk-icon="trash"
-              onClick={event => (app.deleteTask(task.id), event.preventDefault())} />
+              onClick={event => app.deleteTask(task.id)} />
           </div>
         </form>
       </div>
