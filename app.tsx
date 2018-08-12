@@ -103,7 +103,7 @@ class TodoAppView extends Component<{ app: TodoApp, ui: TodoUi }> {
     const { app, ui } = this.props
     return (
       <div className={"uk-flex" + (ui.daytime ? "" : " uk-light uk-background-secondary")}>
-        <div className={"uk-width-medium uk-padding" + (ui.daytime ? " uk-background-muted" : " uk-background-secondary")}>
+        <div className={"uk-width-medium uk-padding" + (ui.daytime ? " uk-background-muted" : " uk-background-secondary uk-box-shadow-xlarge")}>
           <div className="uk-logo">
             Clean Things
           </div>
@@ -176,7 +176,7 @@ class NewTaskView extends Component<{ app: TodoApp, ui: TodoUi }> {
   render() {
     const { ui } = this.props
     return (
-      <form className="uk-position-bottom uk-padding uk-grid-collapse"
+      <form className="uk-position-bottom uk-margin-bottom uk-margin-medium-left uk-margin-medium-right uk-grid-collapse"
         onSubmit={event => event.preventDefault()}
         uk-grid>
         <div className={"uk-inline uk-width-expand" + ( ui.daytime ? "" : " uk-background-secondary")}>
