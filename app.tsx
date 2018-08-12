@@ -29,7 +29,7 @@ interface Context {
   taskIDs: Set<ID>
 }
 
-import { action, autorun, observable } from "mobx"
+import { action, autorun, observable, computed } from "mobx"
 
 function assert(predicate: () => any) {
   if (!predicate())
@@ -153,6 +153,9 @@ import { observer } from "mobx-preact"
 import ObservableSet from "./ObservableSet";
 
 class TodoUi {
+  @observable
+  context: Context | null = null;
+
   get daytime(): boolean {
     const time = new Date().getHours()
     return time > 6 && time < 22
@@ -182,9 +185,7 @@ class TodoAppView extends Component {
           style={{ position: "relative" }}>
           <div style={scrollable}>
             <div className="uk-padding uk-padding-remove-left uk-padding-remove-right">
-              {[...app.state.tasks.values()].map(task =>
-                <TaskView task={task} key={task.id} />
-              )}
+              <TaskListView />
               <div className="uk-padding" />
             </div>
           </div>
@@ -202,11 +203,41 @@ class ContextListView extends Component {
       <div>
         <div className="uk-text-meta">Contexts</div>
         <ul className="uk-tab uk-tab-left uk-margin-remove-top">
-          <li className="uk-active"><a href="#">All tasks</a></li>
+          <li className={ui.context ? "" : "uk-active"}>
+            <a href="#"
+              onClick={action(() => ui.context = null)}>
+              All tasks
+            </a>
+          </li>
           {[...app.state.contexts.values()].map(context => (
-            <li><a href="#">{context.name}</a></li>
+            <li className={context === ui.context ? "uk-active" : ""}>
+              <a href="#"
+                onClick={action(() => ui.context = context)}>
+                {context.name}
+              </a>
+            </li>
           ))}
         </ul>
+      </div>
+    )
+  }
+}
+
+@observer
+class TaskListView extends Component {
+  @computed
+  get tasks() {
+    if (ui.context)
+      return [...ui.context.taskIDs.values()].map(id => app.state.tasks.get(id)!)
+    else
+      return [...app.state.tasks.values()]
+  }
+  render() {
+    return (
+      <div>
+        {this.tasks.map(task =>
+          <TaskView task={task} key={task.id} />
+        )}
       </div>
     )
   }
