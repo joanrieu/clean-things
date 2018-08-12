@@ -95,17 +95,19 @@ class TodoAppView extends Component<{ app: TodoApp }> {
   render() {
     const { app } = this.props
     return (
-      <div className="uk-height-viewport uk-flex">
+      <div className="uk-flex">
         <div className="uk-width-medium uk-background-muted uk-padding">
           <div className="uk-logo">
             Clean Things
           </div>
         </div>
-        <div className="uk-width-expand uk-flex uk-flex-column">
-          <div className="uk-flex-1 uk-height-small uk-overflow-auto">
+        <div className="uk-width-expand"
+          style={{ height: "100vh", position: "relative" }}>
+          <div className="uk-height-1-1 uk-overflow-auto uk-padding uk-padding-remove-left uk-padding-remove-right">
             {[...app.state.tasks.values()].map(task =>
               <TaskView app={app} task={task} key={task.id} />
             )}
+            <div className="uk-padding" />
           </div>
           <NewTaskView app={app} />
         </div>
@@ -119,29 +121,31 @@ class TaskView extends Component<{ app: TodoApp, task: Task }> {
   render() {
     const { app, task } = this.props
     return (
-      <form className="uk-form-large uk-margin-left uk-margin-right uk-grid-collapse"
-        onSubmit={event => event.preventDefault()}
-        uk-grid>
-        <div className="uk-width-auto uk-margin-right">
-          <input className="uk-checkbox"
-            type="checkbox"
-            checked={task.checked}
-            onChange={(event: any) =>
-              app.checkTask(task.id, event.target.checked)} />
-        </div>
-        <div className="uk-width-expand">
-          <input className={"uk-input uk-form-blank"}
-            style={task.checked && { opacity: 0.5, textDecoration: "line-through" }}
-            onBlur={(event: any) => app.renameTask(task.id, event.target.value)}
-            onKeyPress={(event: any) => event.keyCode === 13 && event.target.blur()}
-            value={task.name} />
-        </div>
-        <div className="uk-width-auto">
-          <button className="uk-icon-link"
-            uk-icon="trash"
-            onClick={event => (app.deleteTask(task.id), event.preventDefault())} />
-        </div>
-      </form>
+      <div className="uk-padding uk-padding-remove-top uk-padding-remove-bottom">
+        <form className="uk-form-large uk-grid-collapse"
+          onSubmit={event => event.preventDefault()}
+          uk-grid>
+          <div className="uk-width-auto uk-margin-right">
+            <input className="uk-checkbox"
+              type="checkbox"
+              checked={task.checked}
+              onChange={(event: any) =>
+                app.checkTask(task.id, event.target.checked)} />
+          </div>
+          <div className="uk-width-expand">
+            <input className={"uk-input uk-form-blank"}
+              style={task.checked && { opacity: 0.5, textDecoration: "line-through" }}
+              onBlur={(event: any) => app.renameTask(task.id, event.target.value)}
+              onKeyPress={(event: any) => event.keyCode === 13 && event.target.blur()}
+              value={task.name} />
+          </div>
+          <div className="uk-width-auto">
+            <button className="uk-icon-link"
+              uk-icon="trash"
+              onClick={event => (app.deleteTask(task.id), event.preventDefault())} />
+          </div>
+        </form>
+      </div>
     )
   }
 }
@@ -164,13 +168,13 @@ class NewTaskView extends Component<{ app: TodoApp }> {
 
   render() {
     return (
-      <form className="uk-padding-small uk-grid-collapse"
+      <form className="uk-position-bottom uk-padding uk-grid-collapse"
         onSubmit={event => event.preventDefault()}
         uk-grid>
         <div className="uk-inline uk-width-expand">
           <span className="uk-form-icon"
             uk-icon="plus" />
-          <input className="uk-input"
+          <input className="uk-input uk-box-shadow-large"
             onKeyPress={this.onKeyPress}
             placeholder="New task"
             value={this.name} />
