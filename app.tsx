@@ -3,6 +3,8 @@ type ID = string
 type TodoEvent =
   | { type: "task_created", id: ID, name: string }
   | { type: "task_renamed", id: ID, name: string }
+  | { type: "task_attached_to_context", taskId: ID, contextId: ID }
+  | { type: "task_detached_from_context", taskId: ID, contextId: ID }
   | { type: "task_checked", id: ID }
   | { type: "task_unchecked", id: ID }
   | { type: "task_deleted", id: ID }
@@ -39,6 +41,18 @@ class TodoApp {
   createTask(id: ID, name: string) {
     assert(() => !this.state.tasks.has(id))
     this.apply({ type: "task_created", id, name })
+  }
+
+  @action
+  setTaskContext(taskId: ID, contextId: ID | null) {
+    assert(() => this.state.tasks.has(taskId))
+    for (const context of this.state.contexts.values())
+      if (context.taskIDs.has(taskId))
+        this.apply({ type: "task_detached_from_context", taskId, contextId: context.id })
+    if (contextId) {
+      assert(() => this.state.contexts.has(contextId))
+      this.apply({ type: "task_attached_to_context", taskId, contextId })
+    }
   }
 
   @action
@@ -102,6 +116,12 @@ class TodoApp {
       case "task_renamed":
         this.state.tasks.get(event.id)!.name = event.name
         break
+      case "task_attached_to_context":
+        this.state.contexts.get(event.contextId)!.taskIDs.add(event.taskId)
+        break
+      case "task_detached_from_context":
+        this.state.contexts.get(event.contextId)!.taskIDs.delete(event.taskId)
+        break
       case "task_checked":
         this.state.tasks.get(event.id)!.checked = true
         break
@@ -115,7 +135,7 @@ class TodoApp {
         this.state.contexts.set(event.id, {
           id: event.id,
           name: event.name,
-          taskIDs: new Set()
+          taskIDs: new ObservableSet()
         })
         break
       case "context_renamed":
@@ -130,6 +150,7 @@ class TodoApp {
 
 import { h, render, Component } from "preact"
 import { observer } from "mobx-preact"
+import ObservableSet from "./ObservableSet";
 
 class TodoUi {
   get daytime(): boolean {
@@ -197,22 +218,40 @@ class TaskView extends Component<{ task: Task }> {
     const { task } = this.props
     return (
       <div className="uk-padding uk-padding-remove-top uk-padding-remove-bottom">
-        <form className="uk-form-large uk-grid-small"
+        <form className="uk-grid-small uk-flex-middle"
+          style={task.checked && { opacity: 0.5, textDecoration: "line-through" }}
           onSubmit={event => event.preventDefault()}
           uk-grid>
           <div>
-            <input className="uk-checkbox"
+            <input className="uk-checkbox uk-border-circle"
               type="checkbox"
               checked={task.checked}
               onChange={(event: any) =>
-                app.checkTask(task.id, event.target.checked)} />
+                app.checkTask(task.id, event.target.checked)}
+              style={{
+                width: "2em",
+                height: "2em",
+                backgroundSize: "2em",
+                backgroundPosition: ".1em .1em"
+              }} />
           </div>
-          <div className="uk-width-expand">
+          <div className="uk-width-expand uk-flex uk-flex-column">
             <input className="uk-input uk-form-blank"
-              style={task.checked && { opacity: 0.5, textDecoration: "line-through" }}
               onBlur={(event: any) => app.renameTask(task.id, event.target.value)}
               onKeyPress={(event: any) => event.keyCode === 13 && event.target.blur()}
               value={task.name} />
+            <div uk-form-custom>
+                <select onChange={(event: any) => app.setTaskContext(task.id, event.target.value || null)}>
+                  <option value="">(no context)</option>
+                  {[...app.state.contexts.values()].map(context =>
+                    <option value={context.id}
+                      selected={context.taskIDs.has(task.id)}>
+                      @ {context.name}
+                    </option>
+                  )}
+                </select>
+                <div className="uk-text-meta uk-padding-small uk-padding-remove-top"></div>
+            </div>
           </div>
           <div>
             <a className="uk-icon-link"
