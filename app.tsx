@@ -90,13 +90,20 @@ class TodoApp {
 import { h, render, Component } from "preact"
 import { observer } from "mobx-preact"
 
+class TodoUi {
+  get daytime(): boolean {
+    const time = new Date().getHours()
+    return time > 6 && time < 22
+  }
+}
+
 @observer
-class TodoAppView extends Component<{ app: TodoApp }> {
+class TodoAppView extends Component<{ app: TodoApp, ui: TodoUi }> {
   render() {
-    const { app } = this.props
+    const { app, ui } = this.props
     return (
-      <div className="uk-flex">
-        <div className="uk-width-medium uk-background-muted uk-padding">
+      <div className={"uk-flex" + (ui.daytime ? "" : " uk-light uk-background-secondary")}>
+        <div className={"uk-width-medium uk-padding" + (ui.daytime ? " uk-background-muted" : " uk-background-secondary")}>
           <div className="uk-logo">
             Clean Things
           </div>
@@ -109,7 +116,7 @@ class TodoAppView extends Component<{ app: TodoApp }> {
             )}
             <div className="uk-padding" />
           </div>
-          <NewTaskView app={app} />
+          <NewTaskView app={app} ui={ui} />
         </div>
       </div>
     )
@@ -122,10 +129,10 @@ class TaskView extends Component<{ app: TodoApp, task: Task }> {
     const { app, task } = this.props
     return (
       <div className="uk-padding uk-padding-remove-top uk-padding-remove-bottom">
-        <form className="uk-form-large uk-grid-collapse"
+        <form className="uk-form-large uk-grid-small"
           onSubmit={event => event.preventDefault()}
           uk-grid>
-          <div className="uk-width-auto uk-margin-right">
+          <div className="uk-width-auto">
             <input className="uk-checkbox"
               type="checkbox"
               checked={task.checked}
@@ -151,7 +158,7 @@ class TaskView extends Component<{ app: TodoApp, task: Task }> {
 }
 
 @observer
-class NewTaskView extends Component<{ app: TodoApp }> {
+class NewTaskView extends Component<{ app: TodoApp, ui: TodoUi }> {
   @observable
   name = ""
 
@@ -167,11 +174,12 @@ class NewTaskView extends Component<{ app: TodoApp }> {
   }
 
   render() {
+    const { ui } = this.props
     return (
       <form className="uk-position-bottom uk-padding uk-grid-collapse"
         onSubmit={event => event.preventDefault()}
         uk-grid>
-        <div className="uk-inline uk-width-expand">
+        <div className={"uk-inline uk-width-expand" + ( ui.daytime ? "" : " uk-background-secondary")}>
           <span className="uk-form-icon"
             uk-icon="plus" />
           <input className="uk-input uk-box-shadow-large"
@@ -185,7 +193,8 @@ class NewTaskView extends Component<{ app: TodoApp }> {
 }
 
 const app = (window as any).app = new TodoApp()
-render(<TodoAppView app={app} />, document.body)
+const ui = new TodoUi()
+render(<TodoAppView app={app} ui={ui} />, document.body)
 restoreEvents()
 autorun(backupEvents)
 
