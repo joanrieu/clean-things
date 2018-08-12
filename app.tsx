@@ -1,21 +1,30 @@
 type ID = string
-type TaskName = string
 
 type TodoEvent =
-  | { type: "task_created", id: ID, name: TaskName }
-  | { type: "task_renamed", id: ID, name: TaskName }
+  | { type: "task_created", id: ID, name: string }
+  | { type: "task_renamed", id: ID, name: string }
   | { type: "task_checked", id: ID }
   | { type: "task_unchecked", id: ID }
   | { type: "task_deleted", id: ID }
+  | { type: "context_created", id: ID, name: string }
+  | { type: "context_renamed", id: ID, name: string }
+  | { type: "context_deleted", id: ID }
 
 interface TodoState {
-  tasks: Map<ID, Task>
+  tasks: Map<ID, Task>,
+  contexts: Map<ID, Context>
 }
 
 interface Task {
   id: ID,
-  name: TaskName,
+  name: string,
   checked: boolean
+}
+
+interface Context {
+  id: ID,
+  name: string,
+  taskIDs: Set<ID>
 }
 
 import { action, autorun, observable } from "mobx"
@@ -33,7 +42,7 @@ class TodoApp {
   }
 
   @action
-  renameTask(id: ID, name: TaskName) {
+  renameTask(id: ID, name: string) {
     assert(() => this.state.tasks.has(id))
     this.apply({ type: "task_renamed", id, name })
   }
@@ -53,9 +62,28 @@ class TodoApp {
     this.apply({ type: "task_deleted", id })
   }
 
+  @action
+  createContext(id: ID, name: string) {
+    assert(() => !this.state.contexts.has(id))
+    this.apply({ type: "context_created", id, name })
+  }
+
+  @action
+  renameContext(id: ID, name: string) {
+    assert(() => this.state.contexts.has(id))
+    this.apply({ type: "context_renamed", id, name })
+  }
+
+  @action
+  deleteContext(id: ID, name: string) {
+    assert(() => this.state.contexts.has(id))
+    this.apply({ type: "context_deleted", id })
+  }
+
   @observable
   state: TodoState = {
-    tasks: new Map()
+    tasks: new Map(),
+    contexts: new Map()
   }
 
   @observable
@@ -83,6 +111,19 @@ class TodoApp {
       case "task_deleted":
         this.state.tasks.delete(event.id)
         break
+      case "context_created":
+        this.state.contexts.set(event.id, {
+          id: event.id,
+          name: event.name,
+          taskIDs: new Set()
+        })
+        break
+      case "context_renamed":
+        this.state.contexts.get(event.id)!.name = event.name
+        break
+      case "context_deleted":
+        this.state.contexts.delete(event.id)
+        break
     }
   }
 }
@@ -98,25 +139,35 @@ class TodoUi {
 }
 
 @observer
-class TodoAppView extends Component<{ app: TodoApp, ui: TodoUi }> {
+class TodoAppView extends Component {
   render() {
-    const { app, ui } = this.props
+    const scrollable = {
+      overflow: "auto",
+      flex: 1,
+      minHeight: 1
+    }
     return (
-      <div className={"uk-flex" + (ui.daytime ? "" : " uk-light uk-background-secondary")}>
-        <div className={"uk-width-medium uk-padding" + (ui.daytime ? " uk-background-muted" : " uk-background-secondary uk-box-shadow-xlarge")}>
-          <div className="uk-logo">
+      <div className={"uk-flex" + (ui.daytime ? "" : " uk-light uk-background-secondary")}
+        style={{ height: "100vh" }}>
+        <div className={"uk-width-medium uk-flex uk-flex-column" + (ui.daytime ? " uk-background-muted" : " uk-background-secondary uk-box-shadow-xlarge")}>
+          <div className="uk-logo uk-padding">
             Clean Things
           </div>
-        </div>
-        <div className="uk-width-expand"
-          style={{ height: "100vh", position: "relative" }}>
-          <div className="uk-height-1-1 uk-overflow-auto uk-padding uk-padding-remove-left uk-padding-remove-right">
-            {[...app.state.tasks.values()].map(task =>
-              <TaskView app={app} task={task} key={task.id} />
-            )}
-            <div className="uk-padding" />
+          <div className="uk-padding uk-padding-remove-right" style={scrollable}>
+            <ContextListView />
           </div>
-          <NewTaskView app={app} ui={ui} />
+        </div>
+        <div className="uk-flex-1 uk-flex uk-flex-column"
+          style={{ position: "relative" }}>
+          <div style={scrollable}>
+            <div className="uk-padding uk-padding-remove-left uk-padding-remove-right">
+              {[...app.state.tasks.values()].map(task =>
+                <TaskView task={task} key={task.id} />
+              )}
+              <div className="uk-padding" />
+            </div>
+          </div>
+          <NewTaskView />
         </div>
       </div>
     )
@@ -124,15 +175,32 @@ class TodoAppView extends Component<{ app: TodoApp, ui: TodoUi }> {
 }
 
 @observer
-class TaskView extends Component<{ app: TodoApp, task: Task }> {
+class ContextListView extends Component {
   render() {
-    const { app, task } = this.props
+    return (
+      <div>
+        <div className="uk-text-meta">Contexts</div>
+        <ul className="uk-tab uk-tab-left uk-margin-remove-top">
+          <li className="uk-active"><a href="#">All tasks</a></li>
+          {[...app.state.contexts.values()].map(context => (
+            <li><a href="#">{context.name}</a></li>
+          ))}
+        </ul>
+      </div>
+    )
+  }
+}
+
+@observer
+class TaskView extends Component<{ task: Task }> {
+  render() {
+    const { task } = this.props
     return (
       <div className="uk-padding uk-padding-remove-top uk-padding-remove-bottom">
         <form className="uk-form-large uk-grid-small"
           onSubmit={event => event.preventDefault()}
           uk-grid>
-          <div className="uk-width-auto">
+          <div>
             <input className="uk-checkbox"
               type="checkbox"
               checked={task.checked}
@@ -140,13 +208,13 @@ class TaskView extends Component<{ app: TodoApp, task: Task }> {
                 app.checkTask(task.id, event.target.checked)} />
           </div>
           <div className="uk-width-expand">
-            <input className={"uk-input uk-form-blank"}
+            <input className="uk-input uk-form-blank"
               style={task.checked && { opacity: 0.5, textDecoration: "line-through" }}
               onBlur={(event: any) => app.renameTask(task.id, event.target.value)}
               onKeyPress={(event: any) => event.keyCode === 13 && event.target.blur()}
               value={task.name} />
           </div>
-          <div className="uk-width-auto">
+          <div>
             <a className="uk-icon-link"
               href="#"
               uk-icon="trash"
@@ -159,7 +227,7 @@ class TaskView extends Component<{ app: TodoApp, task: Task }> {
 }
 
 @observer
-class NewTaskView extends Component<{ app: TodoApp, ui: TodoUi }> {
+class NewTaskView extends Component {
   @observable
   name = ""
 
@@ -167,7 +235,6 @@ class NewTaskView extends Component<{ app: TodoApp, ui: TodoUi }> {
   onKeyPress(event: any) {
     this.name = event.target.value as string
     if (event.keyCode === 13 && this.name) {
-      const { app } = this.props
       const id = "task:" + Math.random().toString(16).slice(2)
       app.createTask(id, this.name)
       this.name = ""
@@ -175,12 +242,11 @@ class NewTaskView extends Component<{ app: TodoApp, ui: TodoUi }> {
   }
 
   render() {
-    const { ui } = this.props
     return (
       <form className="uk-position-bottom uk-margin-bottom uk-margin-medium-left uk-margin-medium-right uk-grid-collapse"
         onSubmit={event => event.preventDefault()}
         uk-grid>
-        <div className={"uk-inline uk-width-expand" + ( ui.daytime ? "" : " uk-background-secondary")}>
+        <div className={"uk-inline uk-width-expand" + (ui.daytime ? "" : " uk-background-secondary")}>
           <span className="uk-form-icon"
             uk-icon="plus" />
           <input className="uk-input uk-box-shadow-large"
@@ -195,7 +261,7 @@ class NewTaskView extends Component<{ app: TodoApp, ui: TodoUi }> {
 
 const app = (window as any).app = new TodoApp()
 const ui = new TodoUi()
-render(<TodoAppView app={app} ui={ui} />, document.body)
+render(<TodoAppView />, document.body)
 restoreEvents()
 autorun(backupEvents)
 
@@ -210,3 +276,5 @@ function restoreEvents() {
     for (const event of JSON.parse(events))
       app.apply(event)
 }
+
+require("preact/devtools")
