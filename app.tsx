@@ -169,6 +169,14 @@ class TodoUi {
     this.contextId = context ? context.id : null
   }
 
+  @computed
+  get tasks() {
+    if (this.context)
+      return [...this.context.taskIDs.values()].map(id => app.state.tasks.get(id)!)
+    else
+      return [...app.state.tasks.values()]
+  }
+
   get daytime(): boolean {
     const time = new Date().getHours()
     return time > 6 && time < 22
@@ -245,22 +253,34 @@ class ContextListView extends Component {
 
 @observer
 class TaskListView extends Component {
-  @computed
-  get tasks() {
-    if (ui.context)
-      return [...ui.context.taskIDs.values()].map(id => app.state.tasks.get(id)!)
-    else
-      return [...app.state.tasks.values()]
-  }
-
   render() {
     return (
       <div>
-        {this.tasks.map(task =>
+        {this.renderTitle()}
+        {ui.tasks.map(task =>
           <TaskView task={task} key={task.id} />
         )}
       </div>
     )
+  }
+
+  renderTitle() {
+    if (ui.context)
+      return (
+        <form className="uk-padding"
+          onSubmit={event => event.preventDefault()} >
+          <input className="uk-form-blank uk-form-large"
+            value={ui.context.name}
+            onBlur={action((event: any) => app.renameContext(ui.contextId!, event.target.value))}
+            onKeyPress={(event: any) => event.keyCode === 13 && event.target.blur()} />
+        </form>
+      )
+    else
+      return (
+        <h1 className="uk-padding">
+          All tasks
+        </h1>
+      )
   }
 }
 
@@ -328,6 +348,7 @@ class NewTaskView extends Component {
     if (event.keyCode === 13 && this.name) {
       const id = newId("task")
       app.createTask(id, this.name)
+      app.setTaskContext(id, ui.contextId)
       this.name = ""
     }
   }
