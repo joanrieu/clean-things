@@ -336,6 +336,7 @@ class NewTaskView extends Component {
     return (
       <form className="uk-position-bottom uk-margin-bottom uk-margin-medium-left uk-margin-medium-right uk-grid-collapse"
         onSubmit={event => event.preventDefault()}
+        style={{ zIndex: 2 }}
         uk-grid>
         <div className={"uk-inline uk-width-expand" + (ui.daytime ? "" : " uk-background-secondary")}>
           <span className="uk-form-icon"
