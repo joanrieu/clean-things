@@ -36,6 +36,10 @@ function assert(predicate: () => any) {
     throw new Error("assertion failed: " + predicate)
 }
 
+function newId(type: string) {
+  return type + ":" + Math.random().toString(16).slice(2);
+}
+
 class TodoApp {
   @action
   createTask(id: ID, name: string) {
@@ -154,7 +158,16 @@ import ObservableSet from "./ObservableSet";
 
 class TodoUi {
   @observable
-  context: Context | null = null;
+  contextId: ID | null = null;
+
+  @computed
+  get context(): Context | null {
+    return this.contextId ? app.state.contexts.get(this.contextId)! : null
+  }
+
+  set context(context: Context | null) {
+    this.contextId = context ? context.id : null
+  }
 
   get daytime(): boolean {
     const time = new Date().getHours()
@@ -201,7 +214,14 @@ class ContextListView extends Component {
   render() {
     return (
       <div>
-        <div className="uk-text-meta">Contexts</div>
+        <div className="uk-text-meta uk-flex uk-margin-right">
+          <span className="uk-flex-1">
+            Contexts
+          </span>
+          <a href="#"
+            uk-icon="plus"
+            onClick={action(() => app.createContext(ui.contextId = newId("context"), "New context"))} />
+        </div>
         <ul className="uk-tab uk-tab-left uk-margin-remove-top">
           <li className={ui.context ? "" : "uk-active"}>
             <a href="#"
@@ -232,6 +252,7 @@ class TaskListView extends Component {
     else
       return [...app.state.tasks.values()]
   }
+
   render() {
     return (
       <div>
@@ -305,7 +326,7 @@ class NewTaskView extends Component {
   onKeyPress(event: any) {
     this.name = event.target.value as string
     if (event.keyCode === 13 && this.name) {
-      const id = "task:" + Math.random().toString(16).slice(2)
+      const id = newId("task")
       app.createTask(id, this.name)
       this.name = ""
     }
