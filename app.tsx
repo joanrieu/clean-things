@@ -256,31 +256,19 @@ class TaskListView extends Component {
   render() {
     return (
       <div>
-        {this.renderTitle()}
+        <form className="uk-padding uk-padding-remove-bottom"
+          onSubmit={event => event.preventDefault()}>
+          <input className="uk-form-blank uk-h1 uk-padding-small"
+            value={ui.context ? ui.context.name : "All tasks"}
+            onBlur={action((event: any) => app.renameContext(ui.contextId!, event.target.value))}
+            onKeyPress={(event: any) => event.keyCode === 13 && event.target.blur()}
+            disabled={!ui.context} />
+        </form>
         {ui.tasks.map(task =>
           <TaskView task={task} key={task.id} />
         )}
       </div>
     )
-  }
-
-  renderTitle() {
-    if (ui.context)
-      return (
-        <form className="uk-padding"
-          onSubmit={event => event.preventDefault()} >
-          <input className="uk-form-blank uk-form-large"
-            value={ui.context.name}
-            onBlur={action((event: any) => app.renameContext(ui.contextId!, event.target.value))}
-            onKeyPress={(event: any) => event.keyCode === 13 && event.target.blur()} />
-        </form>
-      )
-    else
-      return (
-        <h1 className="uk-padding">
-          All tasks
-        </h1>
-      )
   }
 }
 
