@@ -26,7 +26,7 @@ interface Task {
 interface Context {
   id: ID,
   name: string,
-  taskIDs: Set<ID>
+  taskIDs: ID[]
 }
 
 import { action, autorun, observable, computed } from "mobx"
@@ -51,7 +51,7 @@ class TodoApp {
   setTaskContext(taskId: ID, contextId: ID | null) {
     assert(() => this.state.tasks.has(taskId))
     for (const context of this.state.contexts.values())
-      if (context.taskIDs.has(taskId))
+      if (context.taskIDs.includes(taskId))
         this.apply({ type: "task_detached_from_context", taskId, contextId: context.id })
     if (contextId) {
       assert(() => this.state.contexts.has(contextId))
@@ -121,10 +121,11 @@ class TodoApp {
         this.state.tasks.get(event.id)!.name = event.name
         break
       case "task_attached_to_context":
-        this.state.contexts.get(event.contextId)!.taskIDs.add(event.taskId)
+        this.state.contexts.get(event.contextId)!.taskIDs.push(event.taskId)
         break
       case "task_detached_from_context":
-        this.state.contexts.get(event.contextId)!.taskIDs.delete(event.taskId)
+        const { taskIDs } = this.state.contexts.get(event.contextId)!
+        taskIDs.splice(taskIDs.indexOf(event.taskId), 1)
         break
       case "task_checked":
         this.state.tasks.get(event.id)!.checked = true
@@ -139,7 +140,7 @@ class TodoApp {
         this.state.contexts.set(event.id, {
           id: event.id,
           name: event.name,
-          taskIDs: new ObservableSet()
+          taskIDs: []
         })
         break
       case "context_renamed":
@@ -154,7 +155,6 @@ class TodoApp {
 
 import { h, render, Component } from "preact"
 import { observer } from "mobx-preact"
-import ObservableSet from "./ObservableSet";
 
 class TodoUi {
   @observable
@@ -305,7 +305,7 @@ class TaskView extends Component<{ task: Task }> {
                   <option value="">(no context)</option>
                   {[...app.state.contexts.values()].map(context =>
                     <option value={context.id}
-                      selected={context.taskIDs.has(task.id)}>
+                      selected={context.taskIDs.includes(task.id)}>
                       @ {context.name}
                     </option>
                   )}
