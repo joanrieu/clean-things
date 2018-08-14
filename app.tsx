@@ -1,16 +1,16 @@
 type ID = string
 
 type TodoEvent =
-  | { type: "task_created", id: ID, name: string }
-  | { type: "task_renamed", id: ID, name: string }
+  | { type: "task_created", taskId: ID, name: string }
+  | { type: "task_renamed", taskId: ID, name: string }
   | { type: "task_attached_to_context", taskId: ID, contextId: ID }
   | { type: "task_detached_from_context", taskId: ID, contextId: ID }
-  | { type: "task_checked", id: ID }
-  | { type: "task_unchecked", id: ID }
-  | { type: "task_deleted", id: ID }
-  | { type: "context_created", id: ID, name: string }
-  | { type: "context_renamed", id: ID, name: string }
-  | { type: "context_deleted", id: ID }
+  | { type: "task_checked", taskId: ID }
+  | { type: "task_unchecked", taskId: ID }
+  | { type: "task_deleted", taskId: ID }
+  | { type: "context_created", contextId: ID, name: string }
+  | { type: "context_renamed", contextId: ID, name: string }
+  | { type: "context_deleted", contextId: ID }
   | { type: "task_reordered_in_context", contextId: ID, oldPosition: number, newPosition: number }
 
 interface TodoState {
@@ -43,9 +43,9 @@ function newId(type: string) {
 
 class TodoApp {
   @action
-  createTask(id: ID, name: string) {
-    assert(() => !this.state.tasks.has(id))
-    this.apply({ type: "task_created", id, name })
+  createTask(taskId: ID, name: string) {
+    assert(() => !this.state.tasks.has(taskId))
+    this.apply({ type: "task_created", taskId, name })
   }
 
   @action
@@ -61,42 +61,42 @@ class TodoApp {
   }
 
   @action
-  renameTask(id: ID, name: string) {
-    assert(() => this.state.tasks.has(id))
-    this.apply({ type: "task_renamed", id, name })
+  renameTask(taskId: ID, name: string) {
+    assert(() => this.state.tasks.has(taskId))
+    this.apply({ type: "task_renamed", taskId, name })
   }
 
   @action
-  checkTask(id: ID, check = true) {
-    assert(() => this.state.tasks.has(id))
+  checkTask(taskId: ID, check = true) {
+    assert(() => this.state.tasks.has(taskId))
     this.apply({
       type: check ? "task_checked" : "task_unchecked",
-      id
+      taskId
     } as TodoEvent)
   }
 
   @action
-  deleteTask(id: ID) {
-    assert(() => this.state.tasks.has(id))
-    this.apply({ type: "task_deleted", id })
+  deleteTask(taskId: ID) {
+    assert(() => this.state.tasks.has(taskId))
+    this.apply({ type: "task_deleted", taskId })
   }
 
   @action
-  createContext(id: ID, name: string) {
-    assert(() => !this.state.contexts.has(id))
-    this.apply({ type: "context_created", id, name })
+  createContext(contextId: ID, name: string) {
+    assert(() => !this.state.contexts.has(contextId))
+    this.apply({ type: "context_created", contextId, name })
   }
 
   @action
-  renameContext(id: ID, name: string) {
-    assert(() => this.state.contexts.has(id))
-    this.apply({ type: "context_renamed", id, name })
+  renameContext(contextId: ID, name: string) {
+    assert(() => this.state.contexts.has(contextId))
+    this.apply({ type: "context_renamed", contextId, name })
   }
 
   @action
-  deleteContext(id: ID, name: string) {
-    assert(() => this.state.contexts.has(id))
-    this.apply({ type: "context_deleted", id })
+  deleteContext(contextId: ID, name: string) {
+    assert(() => this.state.contexts.has(contextId))
+    this.apply({ type: "context_deleted", contextId })
   }
 
   @action
@@ -121,14 +121,14 @@ class TodoApp {
     this.events.push(event)
     switch (event.type) {
       case "task_created":
-        this.state.tasks.set(event.id, {
-          id: event.id,
+        this.state.tasks.set(event.taskId, {
+          id: event.taskId,
           name: event.name,
           checked: false
         })
         break
       case "task_renamed":
-        this.state.tasks.get(event.id)!.name = event.name
+        this.state.tasks.get(event.taskId)!.name = event.name
         break
       case "task_attached_to_context":
         this.state.contexts.get(event.contextId)!.taskIDs.push(event.taskId)
@@ -138,26 +138,26 @@ class TodoApp {
         taskIDs.splice(taskIDs.indexOf(event.taskId), 1)
         break
       case "task_checked":
-        this.state.tasks.get(event.id)!.checked = true
+        this.state.tasks.get(event.taskId)!.checked = true
         break
       case "task_unchecked":
-        this.state.tasks.get(event.id)!.checked = false
+        this.state.tasks.get(event.taskId)!.checked = false
         break
       case "task_deleted":
-        this.state.tasks.delete(event.id)
+        this.state.tasks.delete(event.taskId)
         break
       case "context_created":
-        this.state.contexts.set(event.id, {
-          id: event.id,
+        this.state.contexts.set(event.contextId, {
+          id: event.contextId,
           name: event.name,
           taskIDs: []
         })
         break
       case "context_renamed":
-        this.state.contexts.get(event.id)!.name = event.name
+        this.state.contexts.get(event.contextId)!.name = event.name
         break
       case "context_deleted":
-        this.state.contexts.delete(event.id)
+        this.state.contexts.delete(event.contextId)
         break
       case "task_reordered_in_context":
         const context = this.state.contexts.get(event.contextId)!
