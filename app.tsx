@@ -7,6 +7,8 @@ type TodoEvent =
   | { type: "task_detached_from_context", taskId: ID, contextId: ID }
   | { type: "task_checked", taskId: ID }
   | { type: "task_unchecked", taskId: ID }
+  | { type: "task_due_date_set", taskId: ID, dueDate: string }
+  | { type: "task_due_date_unset", taskId: ID }
   | { type: "task_deleted", taskId: ID }
   | { type: "context_created", contextId: ID, name: string }
   | { type: "context_renamed", contextId: ID, name: string }
@@ -21,7 +23,8 @@ interface TodoState {
 interface Task {
   id: ID,
   name: string,
-  checked: boolean
+  checked: boolean,
+  dueDate: Date | null
 }
 
 interface Context {
@@ -75,6 +78,14 @@ class TodoApp {
     } as TodoEvent)
   }
 
+  setTaskDueDate(taskId: ID, dueDate?: Date) {
+    assert(() => this.state.tasks.has(taskId))
+    if (dueDate)
+      this.apply({ type: "task_due_date_set", taskId, dueDate: dueDate.toISOString() })
+    else
+      this.apply({ type: "task_due_date_unset", taskId })
+  }
+
   @action
   deleteTask(taskId: ID) {
     assert(() => this.state.tasks.has(taskId))
@@ -124,7 +135,8 @@ class TodoApp {
         this.state.tasks.set(event.taskId, {
           id: event.taskId,
           name: event.name,
-          checked: false
+          checked: false,
+          dueDate: null
         })
         break
       case "task_renamed":
@@ -142,6 +154,12 @@ class TodoApp {
         break
       case "task_unchecked":
         this.state.tasks.get(event.taskId)!.checked = false
+        break
+      case "task_due_date_set":
+        this.state.tasks.get(event.taskId)!.dueDate = new Date(event.dueDate)
+        break
+      case "task_due_date_unset":
+        this.state.tasks.get(event.taskId)!.dueDate = null
         break
       case "task_deleted":
         this.state.tasks.delete(event.taskId)
@@ -334,17 +352,23 @@ class TaskView extends Component<{ task: Task }> {
               onBlur={(event: any) => app.renameTask(task.id, event.target.value)}
               onKeyPress={(event: any) => event.keyCode === 13 && event.target.blur()}
               value={task.name} />
-            <div uk-form-custom>
-                <select onChange={(event: any) => app.setTaskContext(task.id, event.target.value || null)}>
-                  <option value="">(no context)</option>
-                  {[...app.state.contexts.values()].map(context =>
-                    <option value={context.id}
-                      selected={context.taskIDs.includes(task.id)}>
-                      @ {context.name}
-                    </option>
-                  )}
-                </select>
-                <div className="uk-text-meta uk-padding-small uk-padding-remove-top"></div>
+            <div className="uk-text-meta uk-padding-small uk-padding-remove-top uk-grid-divider"
+              uk-grid>
+              <div uk-form-custom>
+                  <select onChange={(event: any) => app.setTaskContext(task.id, event.target.value || null)}>
+                    <option value="">(no context)</option>
+                    {[...app.state.contexts.values()].map(context =>
+                      <option value={context.id}
+                        selected={context.taskIDs.includes(task.id)}>
+                        @ {context.name}
+                      </option>
+                    )}
+                  </select>
+                  <div></div>
+              </div>
+              <div>
+                Due: {task.dueDate ? task.dueDate.toLocaleDateString() : "never"}
+              </div>
             </div>
           </div>
           <div>
