@@ -11,6 +11,7 @@ type TodoEvent =
   | { type: "context_created", id: ID, name: string }
   | { type: "context_renamed", id: ID, name: string }
   | { type: "context_deleted", id: ID }
+  | { type: "task_reordered_in_context", contextId: ID, oldPosition: number, newPosition: number }
 
 interface TodoState {
   tasks: Map<ID, Task>,
@@ -98,6 +99,15 @@ class TodoApp {
     this.apply({ type: "context_deleted", id })
   }
 
+  @action
+  reorderTaskInContext(contextId: ID, oldPosition: number, newPosition: number): any {
+    assert(() => this.state.contexts.has(contextId))
+    const context = this.state.contexts.get(contextId)!
+    assert(() => oldPosition >= 0 && oldPosition < context.taskIDs.length)
+    assert(() => newPosition >= 0 && newPosition < context.taskIDs.length)
+    this.apply({ type: "task_reordered_in_context", contextId, oldPosition, newPosition })
+  }
+
   @observable
   state: TodoState = {
     tasks: new Map(),
@@ -148,6 +158,11 @@ class TodoApp {
         break
       case "context_deleted":
         this.state.contexts.delete(event.id)
+        break
+      case "task_reordered_in_context":
+        const context = this.state.contexts.get(event.contextId)!
+        const [ taskId ] = context.taskIDs.splice(event.oldPosition, 1)
+        context.taskIDs.splice(event.newPosition, 0, taskId)
         break
     }
   }
@@ -251,8 +266,25 @@ class ContextListView extends Component {
   }
 }
 
+declare global {
+  const UIkit: any;
+}
+
 @observer
 class TaskListView extends Component {
+  dragStart?: number
+
+  componentDidMount() {
+    const $sortable = this.base!.lastChild!
+    UIkit.util.on($sortable, "start", (event: any) =>
+      this.dragStart = [...$sortable.childNodes].indexOf(event.detail[1]))
+    UIkit.util.on($sortable, "moved", (event: any) =>
+      ui.contextId && app.reorderTaskInContext(
+        ui.contextId,
+        this.dragStart!,
+        [...$sortable.childNodes].indexOf(event.detail[1])))
+  }
+
   render() {
     return (
       <div>
@@ -264,9 +296,11 @@ class TaskListView extends Component {
             onKeyPress={(event: any) => event.keyCode === 13 && event.target.blur()}
             disabled={!ui.context} />
         </form>
-        {ui.tasks.map(task =>
-          <TaskView task={task} key={task.id} />
-        )}
+        <div uk-sortable={!!ui.context}>
+          {ui.tasks.map(task =>
+            <TaskView task={task} key={task.id} />
+          )}
+        </div>
       </div>
     )
   }
