@@ -435,5 +435,3 @@ function restoreEvents() {
     for (const event of JSON.parse(events))
       app.apply(event)
 }
-
-require("preact/devtools")

@@ -4,21 +4,6 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "tsc: watch",
-            "type": "shell",
-            "command": "node",
-            "args": [
-                "./node_modules/.bin/tsc",
-                "-w",
-                "-p",
-                "."
-            ],
-            "problemMatcher": [
-                "$tsc-watch"
-            ],
-            "isBackground": true
-        },
-        {
             "label": "rollup: watch",
             "type": "shell",
             "command": "node",
