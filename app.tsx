@@ -290,17 +290,17 @@ declare global {
 
 @observer
 class TaskListView extends Component {
-  dragStart?: number
+  sortableDiv!: HTMLDivElement;
+  dragStartIndex?: number
 
   componentDidMount() {
-    const $sortable = this.base!.lastChild!
-    UIkit.util.on($sortable, "start", (event: any) =>
-      this.dragStart = [...$sortable.childNodes].indexOf(event.detail[1]))
-    UIkit.util.on($sortable, "moved", (event: any) =>
+    UIkit.util.on(this.sortableDiv, "start", (event: any) =>
+      this.dragStartIndex = [...this.sortableDiv.childNodes].indexOf(event.detail[1]))
+    UIkit.util.on(this.sortableDiv, "moved", (event: any) =>
       ui.contextId && app.reorderTaskInContext(
         ui.contextId,
-        this.dragStart!,
-        [...$sortable.childNodes].indexOf(event.detail[1])))
+        this.dragStartIndex!,
+        [...this.sortableDiv.childNodes].indexOf(event.detail[1])))
   }
 
   render() {
@@ -314,7 +314,8 @@ class TaskListView extends Component {
             onKeyPress={(event: any) => event.keyCode === 13 && event.target.blur()}
             disabled={!ui.context} />
         </form>
-        <div uk-sortable={!!ui.context}>
+        <div uk-sortable={!!ui.context}
+          ref={el => this.sortableDiv = el}>
           {ui.tasks.map(task =>
             <TaskView task={task} key={task.id} />
           )}
@@ -326,6 +327,18 @@ class TaskListView extends Component {
 
 @observer
 class TaskView extends Component<{ task: Task }> {
+  dueDateInput!: HTMLInputElement
+
+  componentDidMount() {
+    (window as any).flatpickr(this.dueDateInput)
+  }
+
+  @computed
+  get taskContext() {
+    return [...app.state.contexts.values()]
+      .find(context => context.taskIDs.includes(this.props.task.id))
+  }
+
   render() {
     const { task } = this.props
     return (
@@ -352,22 +365,41 @@ class TaskView extends Component<{ task: Task }> {
               onBlur={(event: any) => app.renameTask(task.id, event.target.value)}
               onKeyPress={(event: any) => event.keyCode === 13 && event.target.blur()}
               value={task.name} />
-            <div className="uk-text-meta uk-padding-small uk-padding-remove-top uk-grid-divider"
+            <div className="uk-text-meta uk-padding-small uk-padding-remove-top"
               uk-grid>
-              <div uk-form-custom>
-                  <select onChange={(event: any) => app.setTaskContext(task.id, event.target.value || null)}>
-                    <option value="">(no context)</option>
-                    {[...app.state.contexts.values()].map(context =>
-                      <option value={context.id}
-                        selected={context.taskIDs.includes(task.id)}>
-                        @ {context.name}
-                      </option>
-                    )}
-                  </select>
-                  <div></div>
+              <div uk-form-custom="target: > div > input">
+                <select className="uk-input"
+                  onChange={(event: any) => app.setTaskContext(task.id, event.target.value || null)}>
+                  <option className="uk-text-muted"
+                    value="">
+                    No context
+                  </option>
+                  {[...app.state.contexts.values()].map(context =>
+                    <option value={context.id}
+                      selected={context === this.taskContext}>
+                      {context.name}
+                    </option>
+                  )}
+                </select>
+                <div className="uk-inline">
+                  <span className="uk-form-icon"
+                    uk-icon="location" />
+                  <input className={"uk-input" + (this.taskContext ? "" : " uk-text-muted")} />
+                </div>
               </div>
               <div>
-                Due: {task.dueDate ? task.dueDate.toLocaleDateString() : "never"}
+                <div className="uk-inline">
+                  <span className="uk-form-icon"
+                    uk-icon="calendar" />
+                  <input className="uk-input"
+                    placeholder="No due date"
+                    value={task.dueDate ? task.dueDate.toLocaleDateString() : ""}
+                    onChange={(event: any) => app.setTaskDueDate(task.id, new Date(event.target.value))}
+                    ref={el => this.dueDateInput = el} />
+                  <a className="uk-form-icon uk-form-icon-flip"
+                    uk-icon="close"
+                    onClick={() => this.dueDateInput.value = ""} />
+                </div>
               </div>
             </div>
           </div>
