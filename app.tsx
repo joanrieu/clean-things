@@ -335,8 +335,15 @@ class TaskView extends Component<{ task: Task }> {
 
   @computed
   get taskContext() {
+    const { task } = this.props
     return [...app.state.contexts.values()]
-      .find(context => context.taskIDs.includes(this.props.task.id))
+      .find(context => context.taskIDs.includes(task.id))
+  }
+
+  @computed
+  get isOverdue() {
+    const { task } = this.props
+    return task.dueDate && task.dueDate.getTime() - new Date(new Date().toDateString()).getTime() < 0
   }
 
   render() {
@@ -391,7 +398,7 @@ class TaskView extends Component<{ task: Task }> {
                 <div className="uk-inline">
                   <span className="uk-form-icon"
                     uk-icon="calendar" />
-                  <input className="uk-input"
+                  <input className={"uk-input" + (this.isOverdue ? " uk-form-danger" : "")}
                     placeholder="No due date"
                     value={task.dueDate ? task.dueDate.toLocaleDateString() : ""}
                     onChange={(event: any) => app.setTaskDueDate(task.id, new Date(event.target.value))}
