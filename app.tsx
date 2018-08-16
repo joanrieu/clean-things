@@ -196,7 +196,7 @@ declare global {
 
 class TodoUi {
   @observable
-  contextId: ID | null = null;
+  contextId: ID | null = null
 
   @computed
   get context(): Context | null {
@@ -208,11 +208,23 @@ class TodoUi {
   }
 
   @computed
-  get tasks() {
+  get taskList() {
     if (this.context)
       return [...this.context.taskIDs.values()].map(id => app.state.tasks.get(id)!)
     else
       return [...app.state.tasks.values()]
+  }
+
+  @observable
+  taskId: ID | null = null
+
+  @computed
+  get task() {
+    return this.taskId ? app.state.tasks.get(this.taskId)! : null
+  }
+
+  set task(task: Task | null) {
+    this.taskId = task ? task.id : null
   }
 
   get daytime(): boolean {
@@ -250,6 +262,11 @@ class TodoAppView extends Component {
           </div>
           <NewTaskView />
         </div>
+        {ui.task &&
+          <div className={"uk-width-medium uk-flex uk-flex-column" + (ui.daytime ? " uk-background-muted" : " uk-background-secondary uk-box-shadow-xlarge")}>
+            <TaskView task={ui.task} />
+          </div>
+        }
       </div>
     )
   }
@@ -317,7 +334,7 @@ class TaskListView extends Component {
         </form>
         <div uk-sortable={!!ui.context}
           ref={el => this.sortableDiv = el}>
-          {ui.tasks.map(task =>
+          {ui.taskList.map(task =>
             <TaskListItemView task={task} key={task.id} />
           )}
         </div>
@@ -369,8 +386,14 @@ class TaskListItemView extends BaseTaskView {
         <div>
           {this.renderCheckbox()}
         </div>
-        <div className="uk-padding uk-padding-remove-top uk-padding-remove-bottom uk-padding-remove-right uk-text-large">
+        <div className="uk-flex-1 uk-padding uk-padding-remove-top uk-padding-remove-bottom uk-padding-remove-right">
           {task.name}
+        </div>
+        <div>
+          <a className={"uk-icon-button" + (task === ui.task ? " uk-invisible" : "")}
+            onClick={() => ui.task = task}
+            href="#"
+            uk-icon="arrow-right" />
         </div>
       </form>
     )
@@ -388,55 +411,49 @@ class TaskView extends BaseTaskView {
   render() {
     const { task } = this.props
     return (
-      <div className="uk-padding uk-padding-remove-top uk-padding-remove-bottom">
-        <form className="uk-grid-small uk-flex-middle"
-          style={task.checked && { opacity: 0.5, textDecoration: "line-through" }}
+      <div className="uk-padding">
+        <form style={task.checked && { opacity: 0.5, textDecoration: "line-through" }}
           onSubmit={event => event.preventDefault()}
           uk-grid>
           <div>
             {this.renderCheckbox()}
           </div>
-          <div className="uk-width-expand uk-flex uk-flex-column">
-            <input className="uk-input uk-form-blank"
-              onBlur={(event: any) => app.renameTask(task.id, event.target.value)}
-              onKeyPress={(event: any) => event.keyCode === 13 && event.target.blur()}
-              value={task.name} />
-            <div className="uk-text-meta uk-padding-small uk-padding-remove-top"
-              uk-grid>
-              <div uk-form-custom="target: > div > input">
-                <select className="uk-select"
-                  onChange={(event: any) => app.setTaskContext(task.id, event.target.value || null)}>
-                  <option className="uk-text-muted"
-                    value="">
-                    No context
-                  </option>
-                  {[...app.state.contexts.values()].map(context =>
-                    <option value={context.id}
-                      selected={context === this.taskContext}>
-                      {context.name}
-                    </option>
-                  )}
-                </select>
-                <div className="uk-inline">
-                  <span className="uk-form-icon"
-                    uk-icon="location" />
-                  <input className={"uk-input" + (this.taskContext ? "" : " uk-text-muted")} />
-                </div>
-              </div>
-              <div>
-                <div className="uk-inline">
-                  <span className="uk-form-icon"
-                    uk-icon="calendar" />
-                  <input className={"uk-input" + (this.isOverdue ? " uk-form-danger" : "")}
-                    placeholder="No due date"
-                    value={task.dueDate ? task.dueDate.toLocaleDateString() : ""}
-                    onChange={(event: any) => app.setTaskDueDate(task.id, new Date(event.target.value))}
-                    ref={el => this.dueDateInput = el} />
-                  <a className="uk-form-icon uk-form-icon-flip"
-                    uk-icon="close"
-                    onClick={() => this.dueDateInput.value = ""} />
-                </div>
-              </div>
+          <input className="uk-input"
+            onBlur={(event: any) => app.renameTask(task.id, event.target.value)}
+            onKeyPress={(event: any) => event.keyCode === 13 && event.target.blur()}
+            value={task.name} />
+          <div uk-form-custom="target: > div > input">
+            <select className="uk-select"
+              onChange={(event: any) => app.setTaskContext(task.id, event.target.value || null)}>
+              <option className="uk-text-muted"
+                value="">
+                No context
+              </option>
+              {[...app.state.contexts.values()].map(context =>
+                <option value={context.id}
+                  selected={context === this.taskContext}>
+                  {context.name}
+                </option>
+              )}
+            </select>
+            <div className="uk-inline">
+              <span className="uk-form-icon"
+                uk-icon="location" />
+              <input className={"uk-input" + (this.taskContext ? "" : " uk-text-muted")} />
+            </div>
+          </div>
+          <div>
+            <div className="uk-inline">
+              <span className="uk-form-icon"
+                uk-icon="calendar" />
+              <input className={"uk-input" + (this.isOverdue ? " uk-form-danger" : "")}
+                placeholder="No due date"
+                value={task.dueDate ? task.dueDate.toLocaleDateString() : ""}
+                onChange={(event: any) => app.setTaskDueDate(task.id, new Date(event.target.value))}
+                ref={el => this.dueDateInput = el} />
+              <a className="uk-form-icon uk-form-icon-flip"
+                uk-icon="close"
+                onClick={() => this.dueDateInput.value = ""} />
             </div>
           </div>
           <div>
