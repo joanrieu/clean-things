@@ -3,7 +3,7 @@ import commonjs from "rollup-plugin-commonjs"
 import typescript from "rollup-plugin-typescript2"
 
 export default {
-  input: "src/app.tsx",
+  input: "src/bootstrap.tsx",
   output: {
     name: "TodoApp",
     file: "build/bundle.js",

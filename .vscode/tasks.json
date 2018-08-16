@@ -13,7 +13,11 @@
                 "-c"
             ],
             "isBackground": true,
-            "problemMatcher": []
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
         }
     ]
 }

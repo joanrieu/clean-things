@@ -1,6 +1,7 @@
 import { autorun } from "mobx";
 import { h, render } from "preact"
 import app from "./app";
+import TodoAppView from "./views/TodoAppView";
 
 (window as any).app = app
 
