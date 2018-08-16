@@ -1,193 +1,7 @@
-type ID = string
-
-type TodoEvent =
-  | { type: "task_created", taskId: ID, name: string }
-  | { type: "task_renamed", taskId: ID, name: string }
-  | { type: "task_attached_to_context", taskId: ID, contextId: ID }
-  | { type: "task_detached_from_context", taskId: ID, contextId: ID }
-  | { type: "task_checked", taskId: ID }
-  | { type: "task_unchecked", taskId: ID }
-  | { type: "task_due_date_set", taskId: ID, dueDate: string }
-  | { type: "task_due_date_unset", taskId: ID }
-  | { type: "task_deleted", taskId: ID }
-  | { type: "context_created", contextId: ID, name: string }
-  | { type: "context_renamed", contextId: ID, name: string }
-  | { type: "context_deleted", contextId: ID }
-  | { type: "task_reordered_in_context", contextId: ID, oldPosition: number, newPosition: number }
-
-interface TodoState {
-  tasks: Map<ID, Task>,
-  contexts: Map<ID, Context>
-}
-
-interface Task {
-  id: ID,
-  name: string,
-  checked: boolean,
-  dueDate: Date | null
-}
-
-interface Context {
-  id: ID,
-  name: string,
-  taskIDs: ID[]
-}
-
-import { action, autorun, observable, computed } from "mobx"
-
-function assert(predicate: () => any) {
-  if (!predicate())
-    throw new Error("assertion failed: " + predicate)
-}
-
-function newId(type: string) {
-  return type + ":" + Math.random().toString(16).slice(2);
-}
-
-class TodoApp {
-  @action
-  createTask(taskId: ID, name: string) {
-    assert(() => !this.state.tasks.has(taskId))
-    this.apply({ type: "task_created", taskId, name })
-  }
-
-  @action
-  setTaskContext(taskId: ID, contextId: ID | null) {
-    assert(() => this.state.tasks.has(taskId))
-    for (const context of this.state.contexts.values())
-      if (context.taskIDs.includes(taskId))
-        this.apply({ type: "task_detached_from_context", taskId, contextId: context.id })
-    if (contextId) {
-      assert(() => this.state.contexts.has(contextId))
-      this.apply({ type: "task_attached_to_context", taskId, contextId })
-    }
-  }
-
-  @action
-  renameTask(taskId: ID, name: string) {
-    assert(() => this.state.tasks.has(taskId))
-    this.apply({ type: "task_renamed", taskId, name })
-  }
-
-  @action
-  checkTask(taskId: ID, check = true) {
-    assert(() => this.state.tasks.has(taskId))
-    this.apply({
-      type: check ? "task_checked" : "task_unchecked",
-      taskId
-    } as TodoEvent)
-  }
-
-  setTaskDueDate(taskId: ID, dueDate?: Date) {
-    assert(() => this.state.tasks.has(taskId))
-    if (dueDate)
-      this.apply({ type: "task_due_date_set", taskId, dueDate: dueDate.toISOString() })
-    else
-      this.apply({ type: "task_due_date_unset", taskId })
-  }
-
-  @action
-  deleteTask(taskId: ID) {
-    assert(() => this.state.tasks.has(taskId))
-    this.apply({ type: "task_deleted", taskId })
-  }
-
-  @action
-  createContext(contextId: ID, name: string) {
-    assert(() => !this.state.contexts.has(contextId))
-    this.apply({ type: "context_created", contextId, name })
-  }
-
-  @action
-  renameContext(contextId: ID, name: string) {
-    assert(() => this.state.contexts.has(contextId))
-    this.apply({ type: "context_renamed", contextId, name })
-  }
-
-  @action
-  deleteContext(contextId: ID, name: string) {
-    assert(() => this.state.contexts.has(contextId))
-    this.apply({ type: "context_deleted", contextId })
-  }
-
-  @action
-  reorderTaskInContext(contextId: ID, oldPosition: number, newPosition: number): any {
-    assert(() => this.state.contexts.has(contextId))
-    const context = this.state.contexts.get(contextId)!
-    assert(() => oldPosition >= 0 && oldPosition < context.taskIDs.length)
-    assert(() => newPosition >= 0 && newPosition < context.taskIDs.length)
-    this.apply({ type: "task_reordered_in_context", contextId, oldPosition, newPosition })
-  }
-
-  @observable
-  state: TodoState = {
-    tasks: new Map(),
-    contexts: new Map()
-  }
-
-  @observable
-  readonly events: TodoEvent[] = []
-
-  apply(event: TodoEvent) {
-    this.events.push(event)
-    switch (event.type) {
-      case "task_created":
-        this.state.tasks.set(event.taskId, {
-          id: event.taskId,
-          name: event.name,
-          checked: false,
-          dueDate: null
-        })
-        break
-      case "task_renamed":
-        this.state.tasks.get(event.taskId)!.name = event.name
-        break
-      case "task_attached_to_context":
-        this.state.contexts.get(event.contextId)!.taskIDs.push(event.taskId)
-        break
-      case "task_detached_from_context":
-        const { taskIDs } = this.state.contexts.get(event.contextId)!
-        taskIDs.splice(taskIDs.indexOf(event.taskId), 1)
-        break
-      case "task_checked":
-        this.state.tasks.get(event.taskId)!.checked = true
-        break
-      case "task_unchecked":
-        this.state.tasks.get(event.taskId)!.checked = false
-        break
-      case "task_due_date_set":
-        this.state.tasks.get(event.taskId)!.dueDate = new Date(event.dueDate)
-        break
-      case "task_due_date_unset":
-        this.state.tasks.get(event.taskId)!.dueDate = null
-        break
-      case "task_deleted":
-        this.state.tasks.delete(event.taskId)
-        break
-      case "context_created":
-        this.state.contexts.set(event.contextId, {
-          id: event.contextId,
-          name: event.name,
-          taskIDs: []
-        })
-        break
-      case "context_renamed":
-        this.state.contexts.get(event.contextId)!.name = event.name
-        break
-      case "context_deleted":
-        this.state.contexts.delete(event.contextId)
-        break
-      case "task_reordered_in_context":
-        const context = this.state.contexts.get(event.contextId)!
-        const [ taskId ] = context.taskIDs.splice(event.oldPosition, 1)
-        context.taskIDs.splice(event.newPosition, 0, taskId)
-        break
-    }
-  }
-}
-
-import { h, render, Component } from "preact"
+import { observable, computed, action, autorun } from "mobx";
+import { h, Component } from "preact"
 import { observer } from "mobx-preact"
+import app from "./app";
 
 declare global {
   const UIkit: any
@@ -232,6 +46,9 @@ class TodoUi {
     return time > 6 && time < 22
   }
 }
+
+const ui = new TodoUi()
+export default ui;
 
 @observer
 class TodoAppView extends Component {
@@ -283,7 +100,7 @@ class ContextListView extends Component {
           </span>
           <a href="#"
             uk-icon="plus"
-            onClick={action(() => app.createContext(ui.contextId = newId("context"), "New context"))} />
+            onClick={action(() => app.createContext(ui.contextId = app.newId("context"), "New context"))} />
         </div>
         <ul className="uk-tab uk-tab-left uk-margin-remove-top">
           <li className={ui.context ? "" : "uk-active"}>
@@ -477,7 +294,7 @@ class NewTaskView extends Component {
   onKeyPress(event: any) {
     this.name = event.target.value as string
     if (event.keyCode === 13 && this.name) {
-      const id = newId("task")
+      const id = app.newId("task")
       app.createTask(id, this.name)
       app.setTaskContext(id, ui.contextId)
       this.name = ""
@@ -501,22 +318,4 @@ class NewTaskView extends Component {
       </form>
     )
   }
-}
-
-const app = (window as any).app = new TodoApp()
-const ui = new TodoUi()
-render(<TodoAppView />, document.body)
-restoreEvents()
-autorun(backupEvents)
-
-function backupEvents() {
-  const events = JSON.stringify(app.events)
-  localStorage.setItem("events", events)
-}
-
-function restoreEvents() {
-  const events = localStorage.getItem("events")
-  if (events)
-    for (const event of JSON.parse(events))
-      app.apply(event)
 }
