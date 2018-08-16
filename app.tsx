@@ -189,6 +189,11 @@ class TodoApp {
 import { h, render, Component } from "preact"
 import { observer } from "mobx-preact"
 
+declare global {
+  const UIkit: any
+  const flatpickr: any
+}
+
 class TodoUi {
   @observable
   contextId: ID | null = null;
@@ -284,10 +289,6 @@ class ContextListView extends Component {
   }
 }
 
-declare global {
-  const UIkit: any;
-}
-
 @observer
 class TaskListView extends Component {
   sortableDiv!: HTMLDivElement;
@@ -317,7 +318,7 @@ class TaskListView extends Component {
         <div uk-sortable={!!ui.context}
           ref={el => this.sortableDiv = el}>
           {ui.tasks.map(task =>
-            <TaskView task={task} key={task.id} />
+            <TaskListItemView task={task} key={task.id} />
           )}
         </div>
       </div>
@@ -326,13 +327,7 @@ class TaskListView extends Component {
 }
 
 @observer
-class TaskView extends Component<{ task: Task }> {
-  dueDateInput!: HTMLInputElement
-
-  componentDidMount() {
-    (window as any).flatpickr(this.dueDateInput)
-  }
-
+abstract class BaseTaskView extends Component<{ task: Task }> {
   @computed
   get taskContext() {
     const { task } = this.props
@@ -346,6 +341,50 @@ class TaskView extends Component<{ task: Task }> {
     return task.dueDate && task.dueDate.getTime() - new Date(new Date().toDateString()).getTime() < 0
   }
 
+  renderCheckbox() {
+    const { task } = this.props
+    return (
+      <input className="uk-checkbox uk-border-circle"
+        type="checkbox"
+        checked={task.checked}
+        onChange={(event: any) =>
+          app.checkTask(task.id, event.target.checked)}
+        style={{
+          width: "2em",
+          height: "2em",
+          backgroundSize: "2em",
+          backgroundPosition: ".1em .1em"
+        }} />
+    )
+  }
+}
+
+@observer
+class TaskListItemView extends BaseTaskView {
+  render() {
+    const { task } = this.props
+    return (
+      <form className="uk-flex uk-flex-middle uk-padding uk-padding-remove-top uk-padding-remove-bottom uk-margin"
+        onSubmit={event => event.preventDefault()}>
+        <div>
+          {this.renderCheckbox()}
+        </div>
+        <div className="uk-padding uk-padding-remove-top uk-padding-remove-bottom uk-padding-remove-right uk-text-large">
+          {task.name}
+        </div>
+      </form>
+    )
+  }
+}
+
+@observer
+class TaskView extends BaseTaskView {
+  dueDateInput!: HTMLInputElement
+
+  componentDidMount() {
+    flatpickr(this.dueDateInput)
+  }
+
   render() {
     const { task } = this.props
     return (
@@ -355,17 +394,7 @@ class TaskView extends Component<{ task: Task }> {
           onSubmit={event => event.preventDefault()}
           uk-grid>
           <div>
-            <input className="uk-checkbox uk-border-circle"
-              type="checkbox"
-              checked={task.checked}
-              onChange={(event: any) =>
-                app.checkTask(task.id, event.target.checked)}
-              style={{
-                width: "2em",
-                height: "2em",
-                backgroundSize: "2em",
-                backgroundPosition: ".1em .1em"
-              }} />
+            {this.renderCheckbox()}
           </div>
           <div className="uk-width-expand uk-flex uk-flex-column">
             <input className="uk-input uk-form-blank"
@@ -375,7 +404,7 @@ class TaskView extends Component<{ task: Task }> {
             <div className="uk-text-meta uk-padding-small uk-padding-remove-top"
               uk-grid>
               <div uk-form-custom="target: > div > input">
-                <select className="uk-input"
+                <select className="uk-select"
                   onChange={(event: any) => app.setTaskContext(task.id, event.target.value || null)}>
                   <option className="uk-text-muted"
                     value="">
